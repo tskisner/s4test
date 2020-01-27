@@ -1,13 +1,102 @@
-# We set the language to python, even if we use compiled extensions.
+# All jobs use the python language.  This brings in the travis python environments
+# which are available for several python versions.  The python version for each job is
+# specified in the build matrix below.
 language: python
 
-# The python versions to test.  This is a very simple job matrix since we have
-# no compiled extensions and do not have to test against different compiler versions.
-python:
-    - 3.4
-    - 3.6
+# Manually specify every entry in the job matrix.  For older compiler versions, we
+# only test with a default python version.  For the latest available
+# compiler version, we test with several python versions.
 
-# Global environment variables used for all entries of the job matrix.
+jobs:
+  include:
+    # GCC 4.9 - this is the oldest version that has good C++11 support
+    - os: linux
+      dist: xenial
+      python: 3.6
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - build-essential
+            - gcc-4.9
+            - g++-4.9
+      env:
+        - COMPILERS="export CC=$(which gcc-4.9) && export CXX=$(which g++-4.9)"
+    # GCC 5 - default version for ubuntu 16.04 LTS
+    - os: linux
+      dist: xenial
+      python: 3.6
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - build-essential
+            - gcc-5
+            - g++-5
+      env:
+        - COMPILERS="export CC=$(which gcc-5) && export CXX=$(which g++-5)"
+    # GCC 7 - default version for ubuntu 18.04 LTS
+    - os: linux
+      dist: xenial
+      python: 3.6
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - build-essential
+            - gcc-7
+            - g++-7
+      env:
+        - COMPILERS="export CC=$(which gcc-7) && export CXX=$(which g++-7)"
+    # GCC 9 - default version for ubuntu 19.10
+    # Python 3.6
+    - os: linux
+      dist: xenial
+      python: 3.6
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - build-essential
+            - gcc-9
+            - g++-9
+      env:
+        - COMPILERS="export CC=$(which gcc-9) && export CXX=$(which g++-9)"
+    # Linux Latest everything:  gcc, python, pip packages
+    - os: linux
+      dist: xenial
+      python: 3.7
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - build-essential
+            - gcc-9
+            - g++-9
+      env:
+        - COMPILERS="export CC=$(which gcc-9) && export CXX=$(which g++-9)"
+    # OS X is a special case.  We set language to generic and then use homebrew
+    # to install python3 and any other dependencies.  We can only easily use the
+    # latest versions of all packages here.
+    - os: osx
+      osx_image: xcode9.4
+      language: generic
+      addons:
+        homebrew:
+          packages:
+            - git
+            - python3
+      env:
+        - COMPILERS="export CC=$(which clang) && export CXX=$(which clang++)"
+
+
+# The rest of this file is common to all jobs and uses per-job environment variables
+# set in the matrix above.
 
 env:
   global:
@@ -19,15 +108,21 @@ env:
     - CMBS4_PIP=""
 
 before_install:
+    # Set the C and C++ compilers
+    - eval "${COMPILERS}"
+    - echo "  CC = ${CC} $(${CC} -dumpversion)"
+    - echo "  CXX = ${CXX} $(${CXX} -dumpversion)"
     # Install binary python dependencies.
     - pip3 install $PIP_BINARY
     # Install CMB-S4 dependencies
     - for p in $CMBS4_PIP; do r=$(echo $p | cut -d= -f1); v=$(echo $p | cut -d= -f2); pip3 install git+https://github.com/CMB-S4/${r}.git@${v}#egg=${r}; done
 
 # Install this package
-install:
-    - pip3 install .
 
-# Run tests
+install:
+  - python3 setup.py install
+
+# Run tests for this package
+
 script:
-    - python3 -c 'import s4sim.tests; s4sim.tests.run()'
+  - python3 -c 'import fiberassign.test; fiberassign.test.runtests()'
