@@ -125,4 +125,4 @@ install:
 # Run tests for this package
 
 script:
-  - python3 -c 'import s4example.tests; s4example.tests.run()'
+  - python3 -c 'import s4sim.tests; s4sim.tests.run()'
