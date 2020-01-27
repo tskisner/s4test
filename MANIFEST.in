@@ -1,2 +1,0 @@
-include versioneer.py
-include s4sim/_version.py
