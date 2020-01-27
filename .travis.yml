@@ -120,9 +120,9 @@ before_install:
 # Install this package
 
 install:
-  - python3 setup.py install
+  - pip3 install .
 
 # Run tests for this package
 
 script:
-  - python3 -c 'import fiberassign.test; fiberassign.test.runtests()'
+  - python3 -c 'import s4example.tests; s4example.tests.run()'
